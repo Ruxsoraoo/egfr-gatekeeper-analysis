@@ -1,0 +1,131 @@
+# ============================================================
+# EGFR - erlotinib binding site analysis
+# Structure: PDB 1M17 (EGFR kinase domain with erlotinib)
+#
+# Purpose: locate the gatekeeper residue, measure its contacts
+# with erlotinib, and produce a figure of the binding site.
+#
+# Run with:  open egfr_analysis.cxc
+# Lines starting with # are comments and are not executed.
+# ============================================================
+
+
+# ---- 1. Start from a clean state -------------------------
+# Closing everything first prevents duplicate models.
+# A duplicate structure silently multiplies contact counts,
+# which produces a wrong answer with no error message.
+
+close all
+
+
+# ---- 2. Load the structure -------------------------------
+# 1M17 is fetched directly from the Protein Data Bank.
+# It is the EGFR tyrosine kinase domain (residues 671-998 of
+# EGFR_HUMAN) crystallised with erlotinib bound.
+
+open 1M17
+
+
+# ---- 3. Remove crystallographic water --------------------
+# Water molecules from the crystal obscure the view and are
+# not needed for this analysis.
+
+hide solvent
+
+
+# ---- 4. Locate the ligand --------------------------------
+# Erlotinib has the PDB chemical component ID AQ4 and is
+# stored as residue 999 of chain A in this file.
+# info atoms lists its atom names - needed because the names
+# are specific to each ligand and cannot be guessed.
+
+info atoms /A:999
+
+
+# ---- 5. Display the drug ---------------------------------
+# Ball-and-stick in yellow so it is clearly distinguishable
+# from the protein.
+
+select ligand
+view sel
+style sel ball
+color sel yellow
+
+
+# ---- 6. Show the binding site ----------------------------
+# Every residue with an atom within 5 A of the drug.
+# These are the amino acids forming the ATP pocket.
+
+show sel :<5 atoms
+info residues sel
+
+
+# ---- 7. IMPORTANT: residue numbering ---------------------
+# This structure numbers residues from the MATURE protein,
+# while the clinical literature numbers from the precursor
+# including the 24-residue signal peptide.
+#
+#   offset = +24
+#   clinical T790 (gatekeeper)     = THR 766 here
+#   clinical C797 (osimertinib)    = CYS 773 here
+#   clinical M793 (hinge)          = MET 769 here
+#
+# Verified by checking atom names: residue 790 in this file
+# has CB/CG/CD1/CD2 (leucine), while residue 766 has
+# OG1/CG2 (threonine). Getting this wrong would invalidate
+# the whole analysis.
+
+
+# ---- 8. Highlight the two key residues -------------------
+# Red  = gatekeeper threonine, mutated to methionine in T790M
+# Blue = cysteine that osimertinib binds covalently
+
+~select
+color /A:766 red
+color /A:773 blue
+show /A:766,773 atoms
+style /A:766,773 stick
+
+
+# ---- 9. Measure contacts ---------------------------------
+# overlapCutoff -2 counts atom pairs whose van der Waals
+# radii come within 2 A of touching, i.e. close but not
+# necessarily overlapping.
+# makePseudobonds draws them as green dashed lines.
+#
+# Expected result: 20 contacts between THR766 and erlotinib.
+# If the number differs, check the Models panel for a
+# duplicate structure before believing it.
+
+contacts /A:766 restrict /A:999 overlapCutoff -2 makePseudobonds true
+
+
+# ---- 10. Presentation settings ---------------------------
+# White background reproduces better in documents than black.
+
+set bgColor white
+lighting soft
+
+
+# ---- 11. Save the figure ---------------------------------
+# supersample 3 renders at triple resolution then downsamples,
+# which removes jagged edges.
+
+save egfr_gatekeeper.png width 1600 supersample 3
+
+
+# ---- 12. Save the session --------------------------------
+# A .cxs file stores the full state, including the camera
+# angle, so the exact view can be restored later.
+
+save egfr_session.cxs
+
+
+# ============================================================
+# RESULT
+# 20 contacts between THR766 (clinical T790) and erlotinib.
+# The gatekeeper contacts the drug directly, so replacing it
+# with the bulkier methionine encroaches on the space the
+# inhibitor occupies - consistent with T790M conferring
+# resistance to reversible quinazoline inhibitors.
+# ============================================================

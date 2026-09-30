@@ -44,13 +44,7 @@ confident but wrong analysis.
 
 **20 contacts** between THR766 and erlotinib at an overlap cutoff of -2 A.
 
-The gatekeeper threonine is in direct contact with the bound inhibitor.
-Substituting the larger methionine at this position encroaches on the space the
-drug occupies, which is consistent with T790M conferring resistance to
-reversible quinazoline inhibitors.
-
-CYS773 lies in the same pocket. This is the residue osimertinib binds
-covalently, which is the structural basis for its activity against the mutant.
+The gatekeeper threonine is in direct contact with the bound inhibitor. This proximity motivated the original steric hypothesis for T790M resistance. That hypothesis has since been shown to be inadequate — Yun et al. (2008) demonstrated that the mutation increases the receptor's affinity for ATP by more than an order of magnitude, outcompeting ATP-competitive inhibitors. The structure alone cannot distinguish between the two mechanisms.
 
 ## Reproducing it
 
@@ -81,9 +75,7 @@ writes the figure. Every step is commented.
 - The T790M mutant itself is not modelled here. The inference about steric
   encroachment is based on the wild-type structure and the known size
   difference between threonine and methionine.
-- T790M also increases the receptor's affinity for ATP, which contributes to
-  resistance independently of any steric effect. That mechanism is not
-  addressed by this analysis.
+- The ATP-affinity mechanism is the principal explanation for T790M resistance and cannot be addressed by structural analysis alone. Testing it would require modelling ATP competition explicitly, which is the next stage of this project.
 
 ## Next steps
 
@@ -91,6 +83,10 @@ writes the figure. Every step is commented.
 - Add an osimertinib-bound structure and superimpose
 - Build a receptor occupancy model in R using published binding affinities, to
   ask what dose would be required to restore target engagement in the mutant
+
+## References
+
+Yun CH, Mengwasser KE, Toms AV, et al. The T790M mutation in EGFR kinase causes drug resistance by increasing the affinity for ATP. Proc Natl Acad Sci USA. 2008;105(6):2070-2075.
 
 ## Author
 

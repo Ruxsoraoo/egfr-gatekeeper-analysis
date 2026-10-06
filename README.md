@@ -63,7 +63,7 @@ writes the figure. Every step is commented.
 |---|---|
 | `egfr_analysis.cxc` | Annotated ChimeraX script |
 | `egfr_gatekeeper.png` | Binding site figure |
-| `egfr_session.cxs` | ChimeraX session |
+| `egfr_session.cxs` | ChimeraX session (not tracked; written by the script when it runs) |
 | `notes.txt` | Working notes |
 
 ## Limitations

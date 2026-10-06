@@ -1,0 +1,12 @@
+parameter,symbol,construct,value,units,assay_method,assay_conditions,citation,pmid,notes
+Erlotinib dissociation constant wild-type EGFR,Kd_erlotinib_WT,EGFR WT kinase domain,,nM,,,,,TO BE FILLED from a published measurement
+Erlotinib dissociation constant T790M EGFR,Kd_erlotinib_T790M,EGFR T790M kinase domain,,nM,,,,,TO BE FILLED; prefer the same study and assay as the wild-type value
+Osimertinib dissociation constant wild-type EGFR,Kd_osimertinib_WT,EGFR WT kinase domain,,nM,,,,,TO BE FILLED
+Osimertinib dissociation constant T790M EGFR,Kd_osimertinib_T790M,EGFR T790M kinase domain,,nM,,,,,TO BE FILLED
+ATP Michaelis constant wild-type EGFR,Km_ATP_WT,EGFR WT kinase domain,,uM,,,,,TO BE FILLED; used as the ATP affinity term Ka in model 1
+ATP Michaelis constant T790M EGFR,Km_ATP_T790M,EGFR T790M kinase domain,,uM,,,,,TO BE FILLED; the WT to T790M ratio carries the resistance mechanism
+Intracellular ATP concentration,A_cell,human cell lines,,mM,,,,,TO BE FILLED; sets the A/Ka ratio in model 1
+Receptor synthesis rate,ksyn,,,molecules per cell per hour,,,,,TO BE FILLED; model 2 only
+Receptor degradation rate constant,kdeg,,,per hour,,,,,TO BE FILLED; model 2 only
+Erlotinib steady-state plasma concentration at standard dose,C_ss_erlotinib,human,,ng/mL,,,,,TO BE FILLED; needed to judge whether a calculated dose is plausible
+Erlotinib plasma protein binding,fu_erlotinib,human,,fraction unbound,,,,,TO BE FILLED; free concentration drives occupancy not total

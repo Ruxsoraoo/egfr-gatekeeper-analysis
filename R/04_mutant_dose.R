@@ -21,7 +21,9 @@
 #   is reported too and is carried along for reference.
 #
 # Run with:  Rscript R/04_mutant_dose.R
-# Requires:  the Ki, Km and IC50 rows of data/parameters.csv
+# Requires:  the Ki, Km and IC50 rows of data/parameters.csv, read
+#            locally in a clone or fetched from the branch when
+#            this script is sourced from a URL
 #
 # Output
 #   figures/04_mutant_dose.png
@@ -32,8 +34,34 @@
 # Values live in the CSV with their citations. Any row still
 # marked unverified is reported loudly, because an unchecked
 # number that reaches a figure is worse than a missing one.
+#
+# The table is read from the local repository when the script is
+# run inside a clone. When it is sourced straight from GitHub
+# there is no local copy, so the same file is fetched from the
+# branch instead. The fallback URL has to be edited if the
+# branch is renamed, which is the cost of being able to source
+# the script from a URL.
 
-params <- read.csv("data/parameters.csv", stringsAsFactors = FALSE)
+PARAMS_LOCAL <- "data/parameters.csv"
+PARAMS_URL <- paste0("https://raw.githubusercontent.com/Ruxsoraoo/",
+                     "egfr-gatekeeper-analysis/refs/pull/2/head/",
+                     "data/parameters.csv")
+
+read_parameters <- function() {
+  if (file.exists(PARAMS_LOCAL)) {
+    cat(sprintf("Reading parameters from %s\n\n", PARAMS_LOCAL))
+    return(read.csv(PARAMS_LOCAL, stringsAsFactors = FALSE))
+  }
+  cat("No local data/parameters.csv, fetching it from the branch\n")
+  cat(sprintf("  %s\n\n", PARAMS_URL))
+  tryCatch(read.csv(PARAMS_URL, stringsAsFactors = FALSE),
+           error = function(e) {
+             stop(paste("could not read the parameter table, locally or from",
+                        "GitHub:", conditionMessage(e)), call. = FALSE)
+           })
+}
+
+params <- read_parameters()
 
 get_value <- function(symbol) {
   row <- params[params$symbol == symbol, ]

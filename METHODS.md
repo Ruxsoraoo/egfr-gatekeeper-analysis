@@ -110,7 +110,7 @@ should not be assumed to share the offset used in 1M17.
 
 ---
 
-## 7. Parameter collection **[planned]**
+## 7. Parameter collection **[in progress]**
 
 All kinetic and affinity parameters will be taken from published experimental
 measurements. None will be computed from structure.
@@ -120,51 +120,111 @@ experimental conditions, and full citation.
 
 Assay conditions are recorded because affinity values measured by different
 methods are not directly comparable. Where wild-type and mutant values are
-compared, measurements from the same study and assay will be preferred, and
-any comparison across studies will be flagged as such.
+compared, measurements from the same study and assay are preferred, and any
+comparison across studies is flagged as such.
+
+Values are held in `data/parameters.csv`, one row per parameter, with columns
+for the construct measured, the assay method and conditions, the citation and
+its DOI. A `verified` column records whether the value has been read off the
+source paper itself rather than taken from a secondary note; model 4 prints a
+warning listing every unverified row it uses. Rows still empty are open tasks,
+and the scripts that need them fail with a message naming the missing symbol
+instead of substituting a default.
 
 ---
 
-## 8. Model formulation **[planned]**
+## 8. Model formulation **[done, models 1-4]**
 
 A compartmental model of receptor occupancy, expressed as ordinary
-differential equations and solved numerically.
+differential equations and solved numerically with `deSolve::ode` (lsoda).
 
 State variables:
 
 | Symbol | Meaning |
 |---|---|
-| D | free drug concentration |
+| D | free inhibitor concentration, a fixed input |
+| A | free ATP concentration, a fixed input |
 | R | free receptor |
-| DR | drug-receptor complex |
+| DR | inhibitor-receptor complex |
+| AR | ATP-receptor complex |
 | S | downstream signal |
 
-Equations:
+Full equations, as implemented in model 3:
 
 ```
-dR/dt  = ksyn - kdeg*R - kon*D*R + koff*DR
-dDR/dt = kon*D*R - koff*DR - kint*DR
+dR/dt  = ksyn - kdeg*R - konD*D*R + koffD*DR - konA*A*R + koffA*AR
+dDR/dt = konD*D*R - koffD*DR - kint*DR
+dAR/dt = konA*A*R - koffA*AR - kdeg*AR
 dS/dt  = ktrans*R - kout*S
 ```
 
-Fractional occupancy is calculated as `DR / (R + DR)`.
+Fractional occupancy is `DR / (R + DR + AR)`.
 
-Binding is treated as mass action. Receptor synthesis is zero order,
-degradation first order. The downstream signal is driven by free receptor,
-since the drug-bound receptor is inactive.
+Binding is mass action in both directions. Receptor synthesis is zero order
+and degradation first order, applied to the ATP complex as well, since ATP
+binding does not protect the receptor. The downstream signal is driven by free
+receptor, because the inhibitor-bound receptor is inactive.
 
-The system will be solved with `deSolve::ode` using the lsoda method.
+### Departure from the original plan: ATP competition
 
-The model will be built in four stages, each a separate script that runs
-independently:
+The plan put ATP competition out of scope. That was wrong for this question.
+Erlotinib is ATP-competitive, and Yun et al. (2008) attribute T790M resistance
+principally to increased ATP affinity, so a binding model without ATP cannot
+represent the mechanism it is meant to explain, and any dose derived from it
+would be wrong. ATP is therefore present from model 1 rather than added later.
 
-1. Reversible binding only
-2. Binding with receptor turnover
-3. Turnover with downstream signal
-4. Mutant affinity values substituted
+The ATP term enters as `A/Ka` in the denominator of the occupancy expression,
+and the dose required for occupancy f scales with `1 + A/Ka`.
 
-Building in stages makes each addition's effect visible and keeps each step
-explicable before the next is added.
+### The four models
+
+Each is a separate script that runs on its own.
+
+| Script | Adds | Result |
+|---|---|---|
+| `R/01_binding_atp_competition.R` | reversible binding, ATP competition | `occupancy = (D/Kd)/(1 + D/Kd + A/Ka)`; dose for f is `f(1 + A/Ka)/(1 - f)` |
+| `R/02_receptor_turnover.R` | synthesis, degradation, complex loss | same form with `Kd_app = (koffD + kint)/konD`; turnover shifts the curve along the dose axis without changing its shape |
+| `R/03_downstream_signal.R` | lumped downstream signal | at occupancy f the retained signal is `1/(1 + (kint/kdeg)·f/(1 - f))`, independent of A |
+| `R/04_mutant_dose.R` | measured values from `data/parameters.csv` | dose for 90% occupancy in L858R and L858R/T790M, and a comparison of predicted against measured IC50 |
+
+Models 1 to 3 are dimensionless, so each runs before any parameter value is
+available. Only model 4 reads measured values, and it reads them from the
+parameter table rather than carrying them in code.
+
+### Verification
+
+Each script computes its steady state twice, once by integrating the ODEs and
+once from the closed-form solution derived by hand, and stops with an error if
+the two differ by more than a stated tolerance. Model 3 additionally checks the
+full model against the one-line expression for retained signal. A wrong edit to
+the equations therefore fails loudly rather than producing a plausible figure.
+
+Reported differences on the author's machine (R 4.5.2, deSolve 1.42): 1.11e-16
+for model 1, 1.11e-16 for model 2, and 3.13e-13 and 1.11e-16 for model 3's two
+checks. The same equations were implemented independently in Python with SciPy
+LSODA over randomised parameter sets, agreeing to 4.2e-15.
+
+### Model 4 and what it does not yet settle
+
+Model 4 compares L858R with L858R/T790M rather than wild-type with T790M,
+because that is what the source measurements cover and because T790M arises
+clinically on an already-mutant receptor.
+
+Two approximations are carried and should be read as limitations. The ATP
+Michaelis constant is used in place of an ATP dissociation constant, which
+holds only when catalysis is slow relative to dissociation. And the inhibition
+constant and the IC50 values come from different assay formats in the same
+paper.
+
+The script also tests the model against measurement, which is the only such
+test in the project. Predicted IC50 is `Ki(1 + A/Km)`. For L858R this lands
+close to the measured value; for L858R/T790M it is roughly tenfold too low. So
+simple competitive binding with these two constants accounts for the sensitive
+mutant and not for the resistant one. That gap is reported as a result.
+
+Whether a calculated dose is achievable is not addressed, because the free
+plasma concentration of erlotinib is not yet in the parameter table. The script
+prints what is missing instead of estimating it.
 
 ---
 
@@ -201,4 +261,13 @@ scripts and obtain the same figures and numbers without further instruction.
   competition.
 - No experimental validation is performed. Every parameter is taken from the
   literature, and the model's predictions are not tested against data generated
-  for this purpose.
+  for this purpose. The one internal test available is the comparison of
+  predicted against measured IC50 in model 4, and it fails for the double
+  mutant by about tenfold.
+- Free inhibitor and free ATP are treated as fixed inputs. Binding does not
+  deplete either, and no absorption or distribution is modelled.
+- The ATP Michaelis constant is used where the model calls for an ATP
+  dissociation constant.
+- Occupancy is not pathway inhibition. Model 3 shows the two differ by a factor
+  that depends on `kint/kdeg`, a ratio this project has not obtained a value
+  for, so no statement about signal loss in a cell is supported yet.

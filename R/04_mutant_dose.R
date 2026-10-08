@@ -34,6 +34,8 @@
 # Values live in the CSV with their citations. Any row still
 # marked unverified is reported loudly, because an unchecked
 # number that reaches a figure is worse than a missing one.
+# The relation column holds "=" for a measured value and ">"
+# or "<" where the source reports only a bound.
 #
 # The table is read from the local repository when the script is
 # run inside a clone. When it is sourced straight from GitHub
@@ -147,27 +149,49 @@ cat("  needs the Yun values in the CSV first.\n\n")
 # IC50 at the same ATP concentration, so the two are directly
 # comparable. This is the only real test in the project of
 # whether the model describes anything.
+#
+# One measured value is a bound rather than a point estimate:
+# the paper reports erlotinib against the double mutant as
+# > 10 uM. The relation column of the parameter table records
+# that, and it is carried into the comparison below, because
+# a bound reported as a number would overstate what was
+# measured.
+
+relation_of <- function(symbol) {
+  rel <- params$relation[params$symbol == symbol]
+  if (length(rel) != 1 || is.na(rel) || rel == "") "=" else rel
+}
 
 cat("Model against measurement, IC50 at the assay ATP concentration\n")
 pred_sens <- Ki_sens * (1 + A_assay / Km_sens)
 pred_res  <- Ki_res  * (1 + A_assay / Km_res)
 meas_sens <- get_value("IC50_erlotinib_L858R")
 meas_res  <- get_value("IC50_erlotinib_L858R_T790M")
-cat(sprintf("  L858R        : predicted %7.0f nM   measured %7.0f nM\n", pred_sens, meas_sens))
-cat(sprintf("  L858R/T790M  : predicted %7.0f nM   measured %7.0f nM\n", pred_res, meas_res))
-cat(sprintf("  ratio        : predicted %7.1f      measured %7.1f\n\n",
-            pred_res / pred_sens, meas_res / meas_sens))
+rel_sens  <- relation_of("IC50_erlotinib_L858R")
+rel_res   <- relation_of("IC50_erlotinib_L858R_T790M")
+
+cat(sprintf("  L858R        : predicted %7.0f nM   measured %1s %7.0f nM\n",
+            pred_sens, rel_sens, meas_sens))
+cat(sprintf("  L858R/T790M  : predicted %7.0f nM   measured %1s %7.0f nM\n",
+            pred_res, rel_res, meas_res))
+
+# The ratio of a bound to a point estimate is itself a bound.
+ratio_rel <- if (rel_res == ">" || rel_sens == "<") ">" else
+             if (rel_res == "<" || rel_sens == ">") "<" else "="
+cat(sprintf("  ratio        : predicted %7.1f      measured %1s %7.1f\n\n",
+            pred_res / pred_sens, ratio_rel, meas_res / meas_sens))
 
 cat("Reading this honestly\n")
 cat("  For L858R the prediction lands close to the measured value.\n")
-cat("  For the double mutant it is far too low: the model accounts\n")
-cat("  for only part of the measured loss of potency. Simple\n")
-cat("  competitive binding with these two constants is therefore not\n")
-cat("  sufficient, and the gap is the interesting result rather than a\n")
-cat("  defect to hide. Candidate explanations, none tested here:\n")
-cat("  Km,ATP is not the ATP Kd; the Ki and IC50 measurements come\n")
-cat("  from different assay formats; or the mutant's resistance\n")
-cat("  involves something this model omits.\n\n")
+cat("  For the double mutant it is far too low: the measurement is\n")
+cat("  only a lower bound, so the model accounts for at most a small\n")
+cat("  part of the measured loss of potency and possibly much less.\n")
+cat("  Simple competitive binding with these two constants is\n")
+cat("  therefore not sufficient, and the gap is the interesting\n")
+cat("  result rather than a defect to hide. Candidate explanations,\n")
+cat("  none tested here: Km,ATP is not the ATP Kd; the Ki and IC50\n")
+cat("  measurements come from different assay formats; or the\n")
+cat("  mutant's resistance involves something this model omits.\n\n")
 
 
 # ---- 5. Is the dose plausible? ---------------------------
@@ -234,7 +258,8 @@ cat("Wrote figures/04_mutant_dose.png\n")
 #   sensitivity analysis the plan calls for.
 # - Add the free plasma concentration before making any claim
 #   about whether a dose is tolerable.
-# - The predicted and measured IC50 ratios disagree by about
-#   tenfold for the double mutant. That gap is a result, and
-#   the write-up should present it as one.
+# - The predicted and measured IC50 ratios disagree by at
+#   least tenfold for the double mutant, and by more than that
+#   if its true IC50 is well above the reported bound. That gap
+#   is a result, and the write-up should present it as one.
 # ============================================================

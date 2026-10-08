@@ -251,6 +251,9 @@ cat("Wrote figures/04_mutant_dose.png\n")
 
 # ============================================================
 # STILL OPEN
+# - PARAMS_URL points at this pull request's branch so the
+#   script can be sourced from a URL during review. Point it
+#   at main once the branch is merged.
 # - Confirm every value against the source paper and set
 #   verified = yes in data/parameters.csv.
 # - Add the Yun 2008 ATP values and repeat the dose

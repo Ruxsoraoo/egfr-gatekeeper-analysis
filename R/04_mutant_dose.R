@@ -39,13 +39,14 @@
 #
 # The table is read from the local repository when the script is
 # run inside a clone. When it is sourced straight from GitHub
-# there is no local copy, so the same file is fetched from main
-# instead. To test a change to the table on a branch, either
-# work in a clone or point this URL at that branch.
+# there is no local copy, so the same file is fetched from the
+# branch instead. The fallback URL has to be edited if the
+# branch is renamed, which is the cost of being able to source
+# the script from a URL.
 
 PARAMS_LOCAL <- "data/parameters.csv"
 PARAMS_URL <- paste0("https://raw.githubusercontent.com/Ruxsoraoo/",
-                     "egfr-gatekeeper-analysis/refs/heads/main/",
+                     "egfr-gatekeeper-analysis/refs/pull/2/head/",
                      "data/parameters.csv")
 
 read_parameters <- function() {
